@@ -9,21 +9,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jrswab/lsq/config"
+	"github.com/jrswab/lsq/editor"
+	"github.com/jrswab/lsq/tui"
+
+	tea "github.com/charmbracelet/bubbletea"
 	"olympos.io/encoding/edn"
 )
 
-type Config struct {
-	CfgVers      int    `edn:"meta/version"`
-	PreferredFmt string `edn:"preferred-format"`
-	FileNameFmt  string `edn:"journal/file-name-format"`
-}
-
 func main() {
 	// Define command line flags
+	useTUI := flag.Bool("t", false, "Use the custom TUI instead of directly opening the system editor")
 	lsqDirName := flag.String("d", "Logseq", "The main Logseq directory to use.")
 	lsqCfgDirName := flag.String("l", "logseq", "The Logseq configuration directory to use.")
 	lsqCfgFileName := flag.String("c", "config.edn", "The config.edn file to use.")
-	editor := flag.String("e", "EDITOR", "The editor to use.")
+	editorType := flag.String("e", "EDITOR", "The editor to use.")
 
 	// Parse flags
 	flag.Parse()
@@ -47,7 +47,7 @@ func main() {
 	}
 
 	// Set defaults before extracting data from config file:
-	var cfg = &Config{
+	var cfg = &config.Config{
 		CfgVers:      1,
 		PreferredFmt: "Markdown",
 		FileNameFmt:  "yyyy_MM_dd",
@@ -70,7 +70,7 @@ func main() {
 	}
 
 	// Construct today's journal file path
-	extension := ".md"
+	var extension = ".md"
 	if cfg.PreferredFmt == "Org" {
 		extension = ".org"
 	}
@@ -91,36 +91,43 @@ func main() {
 		}
 	}
 
-	// Get editor from environment
-	editing := selectEditor(*editor)
-
-	// Open file in editor
-	cmd := exec.Command(editing, journalPath)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err = cmd.Run()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error opening editor: %v\n", err)
-		os.Exit(1)
+	// After the file exists, branch based on mode
+	if *useTUI {
+		loadTui(cfg, journalPath)
+	} else {
+		loadEditor(*editorType, journalPath)
 	}
 
 	os.Exit(0)
 }
 
-func selectEditor(editor string) string {
-	if editor == "" {
-		return "vim"
-	}
+func loadTui(cfg *config.Config, path string) {
+	p := tea.NewProgram(
+		tui.InitialModel(cfg, path),
+		tea.WithAltScreen(),
+	)
 
-	checkEnv := os.Getenv(editor)
-	if checkEnv != "" {
-		return checkEnv
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Error running program: %v", err)
+		os.Exit(1)
 	}
+}
 
-	// Return whatever if not Env Var
-	return editor
+func loadEditor(program, path string) {
+	// Get editor from environment
+	editing := editor.Select(program)
+
+	// Open file in editor
+	cmd := exec.Command(editing, path)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error opening editor: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func convertDateFormat(lsqFormat string) string {
