@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/jrswab/lsq/config"
@@ -76,7 +75,7 @@ func main() {
 	}
 
 	// Get today's date in YYYY_MM_DD format
-	today := time.Now().Format(convertDateFormat(cfg.FileNameFmt))
+	today := time.Now().Format(config.ConvertDateFormat(cfg.FileNameFmt))
 
 	journalPath := filepath.Join(journalsDir, today+extension)
 
@@ -128,23 +127,4 @@ func loadEditor(program, path string) {
 		fmt.Fprintf(os.Stderr, "Error opening editor: %v\n", err)
 		os.Exit(1)
 	}
-}
-
-func convertDateFormat(lsqFormat string) string {
-	// Map of lsq date format tokens to Go date format
-	formatMap := map[string]string{
-		"yyyy": "2006",
-		"yy":   "06",
-		"MM":   "01",
-		"M":    "1",
-		"dd":   "02",
-		"d":    "2",
-	}
-
-	goFormat := lsqFormat
-	for lsqToken, goToken := range formatMap {
-		goFormat = strings.ReplaceAll(goFormat, lsqToken, goToken)
-	}
-
-	return goFormat
 }
