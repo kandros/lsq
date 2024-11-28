@@ -37,8 +37,10 @@ This opens today's journal in your default editor (EDITOR environment variable).
 ### TUI Controls
 
 - `Ctrl+S`: Save current file
-- `Ctrl+E`: Open in external editor
 - `Ctrl+C`: Quit
+- `Ctrl+T`: Cycle through TODO states on current line
+- `Ctrl+P`: Cycle through priority states on current line
+- Arrow keys: Navigate through text
 
 ## Configuration
 
