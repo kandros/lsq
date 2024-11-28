@@ -5,10 +5,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/jrswab/lsq/config"
 	"github.com/jrswab/lsq/editor"
+	"github.com/jrswab/lsq/todo"
 
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
@@ -81,6 +83,37 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				exec.Command(editor.Select("EDITOR"), m.filepath),
 				nil,
 			)
+		// Cycle through TODO states:
+		case tea.KeyCtrlT:
+			// Get current content and line number
+			content := m.textarea.Value()
+			lineNum := m.textarea.Line()
+
+			// Split content into lines
+			lines := strings.Split(content, "\n")
+
+			// Make sure we're within bounds
+			if lineNum < len(lines) {
+				// Update the specific line
+				lines[lineNum] = todo.CycleState(lines[lineNum])
+
+				// Join lines back together
+				newContent := strings.Join(lines, "\n")
+
+				// Update textarea
+				m.textarea.SetValue(newContent)
+			}
+		case tea.KeyCtrlP:
+			content := m.textarea.Value()
+			lineNum := m.textarea.Line()
+
+			lines := strings.Split(content, "\n")
+
+			if lineNum < len(lines) {
+				lines[lineNum] = todo.CyclePriority(lines[lineNum])
+				newContent := strings.Join(lines, "\n")
+				m.textarea.SetValue(newContent)
+			}
 		}
 
 	case tea.WindowSizeMsg:
