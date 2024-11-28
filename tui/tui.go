@@ -3,13 +3,11 @@ package tui
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/jrswab/lsq/config"
-	"github.com/jrswab/lsq/editor"
 	"github.com/jrswab/lsq/todo"
 
 	"github.com/charmbracelet/bubbles/textarea"
@@ -78,11 +76,6 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return statusMsg{}
 			})
 
-		case tea.KeyCtrlE:
-			return m, tea.ExecProcess(
-				exec.Command(editor.Select("EDITOR"), m.filepath),
-				nil,
-			)
 		// Cycle through TODO states:
 		case tea.KeyCtrlT:
 			// Get current content and line number
@@ -130,7 +123,7 @@ func (m tuiModel) View() string {
 	if m.statusMsg != "" {
 		footer = m.statusMsg
 	} else {
-		footer = "^S save, ^E external editor, ^C quit"
+		footer = "^S save, ^C quit"
 	}
 
 	return fmt.Sprintf(
